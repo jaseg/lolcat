@@ -20,9 +20,23 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <locale.h>
 
 #define ARRAY_SIZE(foo) (sizeof(foo)/sizeof(foo[0]))
 char codes[] = {39,38,44,43,49,48,84,83,119,118,154,148,184,178,214,208,209,203,204,198,199,163,164,128,129,93,99,63,69,33};
+
+/* CAUTION! this function uses a function-static variable! */
+void find_escape_sequences(int c, int *state){
+	if(c == '\033'){ /* Escape sequence YAY */
+		*state = 1;
+	}else if(*state == 1){
+		if(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))
+			*state = 2;
+	}else{
+		*state = 0;
+	}
+}
+
 
 void usage(){
 	printf("Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n");
@@ -37,11 +51,9 @@ int main(int argc, char **argv){
 		char *endptr;
 		if(!strcmp(argv[i], "-h")){
 			if((++i)<argc){
-				fprintf(stderr, "parsing arg %s\n", argv[i]);
 				freq_h = strtod(argv[i], &endptr);
 				if(*endptr)
 					usage();
-				fprintf(stderr, "parsed -h: %lF\n", freq_h);
 			}else{
 				usage();
 			}
@@ -50,19 +62,16 @@ int main(int argc, char **argv){
 				freq_v = strtod(argv[i], &endptr);
 				if(*endptr)
 					usage();
-				fprintf(stderr, "parsed -v: %lF\n", freq_v);
 			}else{
 				usage();
 			}
 		}else{
 			if(!strcmp(argv[i], "--"))
 				i++;
-			fprintf(stderr, "ending option parsing\n");
 			break;
 		}
 	}
 
-	fprintf(stderr, "commencing input parsing...\n");
 	char **inputs = argv+i;
 	char **inputs_end = argv+argc;
 	if(inputs == inputs_end){
@@ -71,26 +80,36 @@ int main(int argc, char **argv){
 		inputs_end = inputs+1;
 	}
 
+	setlocale(LC_ALL, "");
+
 	i=0;
 	for(char **filename=inputs; filename<inputs_end; filename++){
 		FILE *f = stdin;
-		fprintf(stderr, "opening input \"%s\"\n", *filename);
+		int escape_state = 0;
+
 		if(strcmp(*filename, "-"))
 			f = fopen(*filename, "r");
 
-		fprintf(stderr, "reading data...\n");
-
 		while((c = fgetwc(f)) > 0){
-			if(c == '\n'){
-				l++;
-				i = 0;
-			}else if(isprint(c)){
-				int ncc = (int)((i++)*freq_h + l*freq_v);
-				if(ncc != cc)
-					printf("\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
+			find_escape_sequences(c, &escape_state);
+
+			if(!escape_state){
+				if(c == '\n'){
+					l++;
+					i = 0;
+				}else if(!iscntrl(c)){
+					int ncc = (int)((i++)*freq_h + l*freq_v);
+					if(cc != ncc)
+						printf("\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
+				}
 			}
+
 			printf("%lc", c);
+
+			if(escape_state == 2)
+				printf("\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
 		}
+
 		if(c != WEOF){
 			fprintf(stderr, "Error reading input file \"%s\": %s (%d)\n", *filename, strerror(errno), errno);
 			return 2;
