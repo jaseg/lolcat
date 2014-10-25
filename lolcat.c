@@ -161,6 +161,7 @@ int main(int argc, char **argv){
 			if(escape_state == 2)
 				printf("\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
 		}
+		printf("\n");
 
 		fclose(f);
 
