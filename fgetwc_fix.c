@@ -1,4 +1,6 @@
 
+/* This file contains a fixed implementation of fgetwc since glibc's one is a little segfaulty when used on fmemopen'ed files. */
+
 #include <stdlib.h>
 #include <wchar.h>
 #include <stdio.h>
