@@ -25,10 +25,10 @@
 #include <string.h>
 #include <locale.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/time.h>
-
-#include "fgetwc_fix.h"
-
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 static char helpstr[] = "\n"
 "Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n"
@@ -36,8 +36,8 @@ static char helpstr[] = "\n"
 "Concatenate FILE(s), or standard input, to standard output.\n"
 "With no FILE, or when FILE is -, read standard input.\n"
 "\n"
-"              -h <d>:   Horizontal rainbow frequency (default: 0.23)\n"
-"              -v <d>:   Vertical rainbow frequency (default: 0.1)\n"
+"              -h <d>:   Horizontal rainbow frequency (default: 0.01)\n"
+"              -v <d>:   Vertical rainbow frequency (default: 0.005)\n"
 "                  -f:   Force color even when stdout is not a tty\n"
 "           --version:   Print version and exit\n"
 "              --help:   Show this message\n"
@@ -52,17 +52,51 @@ static char helpstr[] = "\n"
 "Original idea: <http://www.github.org/busyloop/lolcat/>\n";
 
 #define ARRAY_SIZE(foo) (sizeof(foo)/sizeof(foo[0]))
-const char codes[] = {39,38,44,43,49,48,84,83,119,118,154,148,184,178,214,208,209,203,204,198,199,163,164,128,129,93,99,63,69,33};
+const char *codes_10b[] = {
+	"\033[38;5;93m",
+	"\033[38;5;99m",
+	"\033[38;5;63m",
+	"\033[38;5;69m",
+	"\033[38;5;33m",
+	"\033[38;5;39m",
+	"\033[38;5;38m",
+	"\033[38;5;44m",
+	"\033[38;5;43m",
+	"\033[38;5;49m",
+	"\033[38;5;48m",
+	"\033[38;5;84m",
+	"\033[38;5;83m",
+	"\033[38;5;119m", /* begin of 11 byte sequences */
+	"\033[38;5;118m",
+	"\033[38;5;154m",
+	"\033[38;5;148m",
+	"\033[38;5;184m",
+	"\033[38;5;178m",
+	"\033[38;5;214m",
+	"\033[38;5;208m",
+	"\033[38;5;209m",
+	"\033[38;5;203m",
+	"\033[38;5;204m",
+	"\033[38;5;198m",
+	"\033[38;5;199m",
+	"\033[38;5;163m",
+	"\033[38;5;164m",
+	"\033[38;5;128m",
+	"\033[38;5;129m"};
+const char **codes_11b = codes_10b+12;
+#define N_SEQS (ARRAY_SIZE(codes_10b))
 
-void find_escape_sequences(int c, int *state){
-	if(c == '\033'){ /* Escape sequence YAY */
-		*state = 1;
-	}else if(*state == 1){
-		if(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))
-			*state = 2;
-	}else{
-		*state = 0;
-	}
+static inline void write_seq(size_t idx){
+	const char **p = codes_10b + (idx%N_SEQS);
+	write(1, *p, 10+(p>=codes_11b));
+}
+
+char *find_escape_sequences(char *c, char *end){
+	if(*c == '\033') /* Escape sequence YAY */
+		for(char *p=c+1; p<end; p++)
+			if(('a' <= *p && *p <= 'z') || ('A' <= *p && *p <= 'Z'))
+				return p+1;
+	return c;
 }
 
 
@@ -77,13 +111,13 @@ void version(){
 }
 
 int main(int argc, char **argv){
-	int c, cc=-1, i, l=0;
 	int colors=(isatty(1) == 1);
-	double freq_h = 0.23, freq_v = 0.1;
+	double freq_h = 0.01, freq_v = 0.005;
 
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	double offx = (tv.tv_sec%300)/300.0;
+	size_t i;
 
 	for(i=1;i<argc;i++){
 		char *endptr;
@@ -125,49 +159,95 @@ int main(int argc, char **argv){
 	setlocale(LC_ALL, "");
 
 	i=0;
+	size_t l=0;
 	for(char **filename=inputs; filename<inputs_end; filename++){
-		FILE *f = stdin;
-		int escape_state = 0;
+		int fd = 0;
+		char *fdata;
+		char *fdata_end;
 
-		if(!strcmp(*filename, "--help"))
-			f = fmemopen(helpstr, strlen(helpstr), "r");
-		else if(strcmp(*filename, "-"))
-			f = fopen(*filename, "r");
-		
-		if(!f){
-			fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
-			return 2;
-		} 
-
-		while((c = _fgetwc_fixed(f)) > 0){
-			if(colors){
-				find_escape_sequences(c, &escape_state);
-
-				if(!escape_state){
-					if(c == '\n'){
-						l++;
-						i = 0;
-					}else if(!iscntrl(c)){
-						int ncc = offx*ARRAY_SIZE(codes) + (int)((i++)*freq_h + l*freq_v);
-						if(cc != ncc)
-							printf("\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
-					}
-				}
+		/* FIXME --help and - */
+		if(!strcmp(*filename, "--help")){
+			fdata = helpstr;
+			fdata_end = helpstr+strlen(helpstr);
+		}else{
+			fd = open(*filename, O_RDONLY);
+			if(fd<0){
+				fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
+				return 2;
+			}
+			
+			struct stat statinfo;
+			if(fstat(fd, &statinfo) == -1){
+				close(fd);
+				return 2;
 			}
 
-			printf("%lc", c);
+			fdata = mmap(NULL, statinfo.st_size, PROT_READ, MAP_SHARED, fd, 0);
+			fdata_end = fdata+statinfo.st_size;
 
-			if(escape_state == 2)
-				printf("\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
+			if(fdata == MAP_FAILED){
+				fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
+				close(fd);
+				return 2;
+			} 
 		}
-		printf("\n\033[0m");
-		cc = -1;
+		
+		char *start = fdata;
+		mbstate_t mbst;
+		memset(&mbst, 0, sizeof(mbst));
+		size_t ncc = 0;
+		size_t next_i = (size_t)(1/freq_h);
+		char *p;
+		char *np;
 
-		fclose(f);
+		write_seq(ncc);
+		for(p=fdata; p < fdata_end;){
 
-		if(c != WEOF && c != 0){
-			fprintf(stderr, "Error reading input file \"%s\": %s\n", *filename, strerror(errno));
-			return 2;
+			size_t res;
+
+			if(*p == '\n'){
+				p++;
+				l++;
+				i = 0;
+				
+				write(1, start, p-start);
+				start = p;
+
+				double ncc_d = (offx + l*freq_v)*N_SEQS;
+				ncc = (size_t)ncc_d;
+				next_i = i + (size_t)((ncc_d-ncc+1.0)/freq_h/N_SEQS);
+				write_seq(ncc);
+
+			}else if((np = find_escape_sequences(p, fdata_end)) != p){
+				p = np;
+				write(1, start, p-start);
+				start = p;
+				write_seq(ncc);
+			}else if((res = mbrtowc(NULL, p, fdata_end-p, &mbst)) > 0){
+				p += res;
+				i++;
+				if(i >= next_i){
+					write(1, start, p-start);
+					start = p;
+
+					double ncc_d = (offx + i*freq_h + l*freq_v)*N_SEQS;
+					ncc = (size_t)ncc_d;
+					next_i = i + (size_t)((ncc_d-ncc+1.0)/freq_h/N_SEQS);
+					write_seq(ncc);
+				}
+			}else{
+				fprintf(stderr, "Error reading input file \"%s\": %s\n", *filename, strerror(errno));
+				if(fd)
+					close(fd);
+				return 2;
+			}
 		}
+
+		write(1, start, p-start);
+		printf("\033[0m\n");
+		l = 0;
+
+		if(fd)
+			close(fd);
 	}
 }
