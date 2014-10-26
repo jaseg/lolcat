@@ -147,8 +147,8 @@ int main(int argc, char **argv){
 					if(c == '\n'){
 						l++;
 						i = 0;
-					}else if(!iscntrl(c)){
-						int ncc = offx*ARRAY_SIZE(codes) + (int)((i++)*freq_h + l*freq_v);
+					}else{
+						int ncc = offx*ARRAY_SIZE(codes) + (int)((i+=wcwidth(c))*freq_h + l*freq_v);
 						if(cc != ncc)
 							printf("\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
 					}
