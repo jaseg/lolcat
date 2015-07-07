@@ -19,15 +19,13 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <ctype.h>
-#include <error.h>
+#include <err.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h>
 #include <unistd.h>
 #include <sys/time.h>
-
-#include "fgetwc_fix.h"
 
 
 static char helpstr[] = "\n"
@@ -139,7 +137,7 @@ int main(int argc, char **argv){
 			return 2;
 		} 
 
-		while((c = _fgetwc_fixed(f)) > 0){
+		while((c = fgetwc(f)) > 0){
 			if(colors){
 				find_escape_sequences(c, &escape_state);
 
