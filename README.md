@@ -6,6 +6,8 @@
 
 ![](https://raw.githubusercontent.com/jaseg/lolcat/master/screenshot.png)
 
+![](./sl.gif)
+
 ## Installation
 
 ```bash
