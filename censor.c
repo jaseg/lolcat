@@ -55,12 +55,12 @@ int main(int argc, char **argv){
 
         int c;
 		while((c = fgetwc(f)) > 0){
-            if(strchr("acemnopqrsuvwxyz", c))
+            if(strchr("acegmnopqrsuvwxyz", c))
                 printf("▄");
-            else if(strchr("bdfhijkltABCDEFGHIJKLMNOPQRSTUVWXYZ", c))
-                printf("█");
-            else
+            else if(strchr(".,:; \t\r\n", c))
                 printf("%lc", c);
+            else
+                printf("█");
 		}
 
 		fclose(f);
