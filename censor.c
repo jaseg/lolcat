@@ -27,47 +27,43 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-
-#define ARRAY_SIZE(foo) (sizeof(foo)/sizeof(foo[0]))
-const char codes[] = {39,38,44,43,49,48,84,83,119,118,154,148,184,178,214,208,209,203,204,198,199,163,164,128,129,93,99,63,69,33};
-
 int main(int argc, char **argv){
-	char **inputs = argv+1;
-	char **inputs_end = argv+argc;
-	if(inputs == inputs_end){
-		char *foo[] = {"-"};
-		inputs = foo;
-		inputs_end = inputs+1;
-	}
+    char **inputs = argv+1;
+    char **inputs_end = argv+argc;
+    if(inputs == inputs_end){
+        char *foo[] = {"-"};
+        inputs = foo;
+        inputs_end = inputs+1;
+    }
 
-	setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "");
 
-	for(char **filename=inputs; filename<inputs_end; filename++){
-		FILE *f = stdin;
+    for(char **filename=inputs; filename<inputs_end; filename++){
+        FILE *f = stdin;
 
-		if(strcmp(*filename, "-"))
-			f = fopen(*filename, "r");
-		
-		if(!f){
-			fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
-			return 2;
-		} 
+        if(strcmp(*filename, "-"))
+            f = fopen(*filename, "r");
+        
+        if(!f){
+            fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
+            return 2;
+        } 
 
         int c;
-		while((c = fgetwc(f)) > 0){
+        while((c = fgetwc(f)) > 0){
             if(strchr("acegmnopqrsuvwxyz", c))
                 printf("▄");
             else if(strchr(".,:; \t\r\n", c))
                 printf("%lc", c);
             else
                 printf("█");
-		}
+        }
 
-		fclose(f);
+        fclose(f);
 
-		if(c != WEOF && c != 0){
-			fprintf(stderr, "Error reading input file \"%s\": %s\n", *filename, strerror(errno));
-			return 2;
-		}
-	}
+        if(c != WEOF && c != 0){
+            fprintf(stderr, "Error reading input file \"%s\": %s\n", *filename, strerror(errno));
+            return 2;
+        }
+    }
 }
