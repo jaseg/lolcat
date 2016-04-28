@@ -13,8 +13,6 @@
  * 0. You just DO WHAT THE FUCK YOU WANT TO.
  */
 
-#define _GNU_SOURCE //for fmemopen
-
 #include <stdint.h>
 #include <stdio.h>
 #include <wchar.h>
@@ -26,6 +24,12 @@
 #include <locale.h>
 #include <unistd.h>
 #include <sys/time.h>
+
+#ifdef __APPLE__
+#include "fmemopen.h"
+#else // __APPLE__
+#define _GNU_SOURCE //for fmemopen
+#endif // __APPLE__
 
 
 static char helpstr[] = "\n"

@@ -1,4 +1,14 @@
 
+LOLCAT_SRC = lolcat.c
+CENSOR_SRC = censor.c
+CFLAGS = -std=c11 -Wall
+
+ifeq ($(shell uname -s),Darwin)
+	LOLCAT_SRC += memorymapping/src/fmemopen.c
+	CENSOR_SRC += memorymapping/src/fmemopen.c
+	CFLAGS += -Imemorymapping/src
+endif
+
 all: lolcat censor
 
 .PHONY: install clean musl static
@@ -12,18 +22,18 @@ musl: musl/lib/libc.a musl/lib/crt1.o
 static: lolcat-static censor-static
 
 lolcat-static: lolcat.c musl
-	gcc -c -std=c11 -Wall -Imusl/include -o lolcat.o $<
+	gcc -c $(CFLAGS) -Imusl/include -o lolcat.o $<
 	gcc -s -nostartfiles -nodefaultlibs -nostdinc -static -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ lolcat.o musl/lib/crt1.o musl/lib/libc.a
 
 censor-static: censor.c musl
-	gcc -c -std=c11 -Wall -Imusl/include -o censor.o $<
+	gcc -c $(CFLAGS) -Imusl/include -o censor.o $<
 	gcc -s -nostartfiles -nodefaultlibs -nostdinc -static -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ censor.o musl/lib/crt1.o musl/lib/libc.a
 
-lolcat: lolcat.c
-	gcc -std=c11 -Wall -o $@ $<
+lolcat: $(LOLCAT_SRC)
+	gcc $(CFLAGS) -o $@ $^
 
-censor: censor.c
-	gcc -std=c11 -Wall -o $@ $<
+censor: $(CENSOR_SRC)
+	gcc $(CFLAGS) -o $@ $^
 
 install: lolcat censor
 	install lolcat /usr/local/bin

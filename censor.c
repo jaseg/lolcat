@@ -13,8 +13,6 @@
  * 0. You just DO WHAT THE FUCK YOU WANT TO.
  */
 
-#define _GNU_SOURCE //for fmemopen
-
 #include <stdint.h>
 #include <stdio.h>
 #include <wchar.h>
