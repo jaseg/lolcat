@@ -36,6 +36,7 @@ int main(int argc, char **argv){
 
     setlocale(LC_ALL, "");
 
+    int escape_state = 0;
     for(char **filename=inputs; filename<inputs_end; filename++){
         FILE *f = stdin;
 
@@ -49,12 +50,21 @@ int main(int argc, char **argv){
 
         int c;
         while((c = fgetwc(f)) > 0){
-            if(strchr("acegmnopqrsuvwxyz", c))
-                printf("▄");
-            else if(strchr(".,:; \t\r\n", c))
+            if(!escape_state){
+                if(c == '\e'){
+                    printf("%lc", c);
+                    escape_state = 1;
+                }else if(strchr("acegmnopqrsuvwxyz", c))
+                    printf("▄");
+                else if(strchr(".,:; \t\r\n", c))
+                    printf("%lc", c);
+                else
+                    printf("█");
+            }else{
                 printf("%lc", c);
-            else
-                printf("█");
+                if(!strchr("[0123456789;", c))
+                    escape_state = 0;
+            }
         }
 
         fclose(f);
