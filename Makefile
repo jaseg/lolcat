@@ -1,7 +1,9 @@
 
-LOLCAT_SRC = lolcat.c
-CENSOR_SRC = censor.c
-CFLAGS = -std=c11 -Wall
+LOLCAT_SRC := lolcat.c
+CENSOR_SRC := censor.c
+CFLAGS := -std=c11 -Wall
+
+DESTDIR := /usr/local/bin
 
 ifeq ($(shell uname -s),Darwin)
 	LOLCAT_SRC += memorymapping/src/fmemopen.c
@@ -36,8 +38,8 @@ censor: $(CENSOR_SRC)
 	gcc $(CFLAGS) -o $@ $^
 
 install: lolcat censor
-	install lolcat /usr/local/bin
-	install censor /usr/local/bin
+	install lolcat $(DESTDIR)/
+	install censor $(DESTDIR)/
 
 clean:
 	rm -f lolcat lolcat-static.o lolcat-static censor censor-static.o censor-static
