@@ -10,6 +10,16 @@
 
 ## Installation
 
+### Archlinux
+
+There's an [AUR package](https://aur.archlinux.org/packages/c-lolcat):
+
+```bash
+$ yaourt -S c-lolcat
+```
+
+### Others
+
 ```bash
 $ make && sudo make install
 ```
