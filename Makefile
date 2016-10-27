@@ -1,7 +1,7 @@
 
 LOLCAT_SRC := lolcat.c
 CENSOR_SRC := censor.c
-CFLAGS := -std=c11 -Wall
+CFLAGS := -std=c11 -Wall -g
 
 DESTDIR := /usr/local/bin
 
@@ -11,7 +11,7 @@ ifeq ($(shell uname -s),Darwin)
 	CFLAGS += -Imemorymapping/src
 endif
 
-all: lolcat censor
+all: lolcat-static censor-static
 
 .PHONY: install clean musl static
 
@@ -38,8 +38,8 @@ censor: $(CENSOR_SRC)
 	gcc $(CFLAGS) -o $@ $^
 
 install: lolcat censor
-	install lolcat $(DESTDIR)/
-	install censor $(DESTDIR)/
+	install lolcat-static $(DESTDIR)/lolcat
+	install censor-static $(DESTDIR)/censor
 
 clean:
 	rm -f lolcat lolcat-static.o lolcat-static censor censor-static.o censor-static
