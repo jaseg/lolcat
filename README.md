@@ -24,6 +24,20 @@ $ yaourt -S c-lolcat
 $ make && sudo make install
 ```
 
+If this can't find musl and you have it installed somewhere, run
+```bash
+$ make MUSLDIR=/path/to/musl
+```
+
+If you don't have a musl around yet, the easiest way to build is to run
+```bash
+$ git submodule init
+$ git submodule update
+$ make
+```
+
+This will checkout and build musl in this repository's ```musl``` dir.
+
 ## Why?
 
 This `lolcat` clone is an attempt to reduce the world's carbon dioxide emissions by optimizing inefficient code. It's >10x as fast and <0.1% as large as the original one.

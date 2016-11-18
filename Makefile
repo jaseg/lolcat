@@ -1,9 +1,11 @@
 
-LOLCAT_SRC := lolcat.c
-CENSOR_SRC := censor.c
-CFLAGS := -std=c11 -Wall -g
+LOLCAT_SRC ?= lolcat.c
+CENSOR_SRC ?= censor.c
+CFLAGS ?= -std=c11 -Wall -g
 
-DESTDIR := /usr/local/bin
+DESTDIR ?= /usr/local/bin
+
+include Makefile.musl
 
 ifeq ($(shell uname -s),Darwin)
 	LOLCAT_SRC += memorymapping/src/fmemopen.c
@@ -15,21 +17,15 @@ all: lolcat-static censor-static
 
 .PHONY: install clean musl static
 
-musl/lib/libc.a musl/lib/crt1.o:
-	cd musl; ./configure
-	make -C musl
-
-musl: musl/lib/libc.a musl/lib/crt1.o
-
 static: lolcat-static censor-static
 
-lolcat-static: lolcat.c musl
-	gcc -c $(CFLAGS) -Imusl/include -o lolcat.o $<
-	gcc -s -nostartfiles -nodefaultlibs -nostdinc -static -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ lolcat.o musl/lib/crt1.o musl/lib/libc.a
+lolcat-static: lolcat.c
+	gcc -c $(CFLAGS) -I$(MUSLDIR)/include -o lolcat.o $<
+	gcc -s -nostartfiles -nodefaultlibs -nostdinc -static -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ lolcat.o $(MUSLDIR)/lib/crt1.o $(MUSLDIR)/lib/libc.a
 
-censor-static: censor.c musl
-	gcc -c $(CFLAGS) -Imusl/include -o censor.o $<
-	gcc -s -nostartfiles -nodefaultlibs -nostdinc -static -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ censor.o musl/lib/crt1.o musl/lib/libc.a
+censor-static: censor.c
+	gcc -c $(CFLAGS) -I$(MUSLDIR)/include -o censor.o $<
+	gcc -s -nostartfiles -nodefaultlibs -nostdinc -static -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ censor.o $(MUSLDIR)/lib/crt1.o $(MUSLDIR)/lib/libc.a
 
 lolcat: $(LOLCAT_SRC)
 	gcc $(CFLAGS) -o $@ $^
@@ -37,11 +33,11 @@ lolcat: $(LOLCAT_SRC)
 censor: $(CENSOR_SRC)
 	gcc $(CFLAGS) -o $@ $^
 
-install: lolcat censor
+install: lolcat-static censor-static
 	install lolcat-static $(DESTDIR)/lolcat
 	install censor-static $(DESTDIR)/censor
 
 clean:
 	rm -f lolcat lolcat-static.o lolcat-static censor censor-static.o censor-static
-	make -C musl clean
+	# make -C musl clean
 
