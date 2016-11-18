@@ -1,7 +1,7 @@
 # Maintainer: Ricardo (XenGi) Band <email@ricardo.band>
 
 pkgname=c-lolcat
-pkgver=r26.502d379
+pkgver=r31.f585abd
 pkgrel=1
 pkgdesc="High-performance implementation of lolcat"
 arch=('i686' 'x86_64')
@@ -9,13 +9,23 @@ url="https://github.com/jaseg/lolcat"
 license=('WTFPL')
 depends=('musl')
 makedepends=()
-conflicts=('lolcat' 'python-lolcat')
-source=("$pkgname"::'git+https://github.com/jaseg/lolcat.git')
-sha256sums=(SKIP)
+conflicts=('lolcat')
+source=("$pkgname"::'git+https://github.com/jaseg/lolcat.git'
+  'musl'::'git://git.musl-libc.org/musl'
+  'memorymapping'::'git+https://github.com/NimbusKit/memorymapping.git')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
 
 pkgver() {
-    cd "$srcdir/$pkgname"
-    printf 'r%s.%s' "$(git rev-list --count HEAD)" "$(git describe --always)"
+  cd "$srcdir/$pkgname"
+  printf 'r%s.%s' "$(git rev-list --count HEAD)" "$(git describe --always)"
+}
+
+prepare() {
+  cd "$srcdir/$pkgname"
+  git submodule init
+  git config submodule.musl.url $srcdir/musl
+  git config submodule.memorymapping.url $srcdir/memorymapping
+  git submodule update
 }
 
 build() {
