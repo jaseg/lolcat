@@ -16,7 +16,7 @@ all: lolcat-static censor-static
 .PHONY: install clean musl static
 
 musl/lib/libc.a musl/lib/crt1.o:
-	cd musl; ./configure
+	cd /usr/lib/musl; ./configure
 	make -C musl
 
 musl: musl/lib/libc.a musl/lib/crt1.o
