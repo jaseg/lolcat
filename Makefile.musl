@@ -23,5 +23,6 @@ musl/lib/libc.a musl/lib/crt1.o: musl/config.mak
 musl/config.mak:
 	cd musl; ./configure
 
+.PHONY: musl
 musl: musl/lib/libc.a musl/lib/crt1.o
 

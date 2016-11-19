@@ -5,6 +5,8 @@ CFLAGS ?= -std=c11 -Wall -g
 
 DESTDIR ?= /usr/local/bin
 
+all: lolcat-static censor-static
+
 include Makefile.musl
 
 ifeq ($(shell uname -s),Darwin)
@@ -13,9 +15,7 @@ ifeq ($(shell uname -s),Darwin)
 	CFLAGS += -Imemorymapping/src
 endif
 
-all: lolcat-static censor-static
-
-.PHONY: install clean musl static
+.PHONY: install clean static
 
 static: lolcat-static censor-static
 
