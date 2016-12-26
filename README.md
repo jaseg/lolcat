@@ -18,6 +18,14 @@ There's an [AUR package](https://aur.archlinux.org/packages/c-lolcat):
 $ yaourt -S c-lolcat
 ```
 
+### Mac
+
+Build the system-libc version (instead of the statically linked version) with:
+```
+$ make lolcat
+```
+...and put the resulting binary at a place of your choice.
+
 ### Others
 
 ```bash
