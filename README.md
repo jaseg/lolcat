@@ -28,7 +28,7 @@ $ snap install lolcat-c
 
 ### Mac
 
-Build the system-libc version (instead of the statically linked version) with:
+Build loclcat with:
 ```
 $ make lolcat
 ```
@@ -39,20 +39,6 @@ $ make lolcat
 ```bash
 $ make && sudo make install
 ```
-
-If this can't find musl and you have it installed somewhere, run
-```bash
-$ make MUSLDIR=/path/to/musl
-```
-
-If you don't have a musl around yet, the easiest way to build is to run
-```bash
-$ git submodule init
-$ git submodule update
-$ make
-```
-
-This will checkout and build musl in this repository's ```musl``` dir.
 
 ## Why?
 

@@ -13,6 +13,8 @@
  * 0. You just DO WHAT THE FUCK YOU WANT TO.
  */
 
+#define _XOPEN_SOURCE
+
 #include <stdint.h>
 #include <stdio.h>
 #include <wchar.h>
@@ -24,13 +26,6 @@
 #include <locale.h>
 #include <unistd.h>
 #include <sys/time.h>
-
-#ifdef __APPLE__
-#include "fmemopen.h"
-#else // __APPLE__
-#define _GNU_SOURCE //for fmemopen
-#endif // __APPLE__
-
 
 static char helpstr[] = "\n"
 "Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n"
@@ -79,7 +74,8 @@ void version(){
 }
 
 int main(int argc, char **argv){
-    int c, cc=-1, i, l=0;
+    int cc=-1, i, l=0;
+    wint_t c;
     int colors=1;
     double freq_h = 0.23, freq_v = 0.1;
 
@@ -128,20 +124,38 @@ int main(int argc, char **argv){
 
     i=0;
     for(char **filename=inputs; filename<inputs_end; filename++){
-        FILE *f = stdin;
+        wint_t (*this_file_read_wchar)(FILE *); /* Used for --help because fmemopen is universally broken when used with fgetwc */
+        FILE *f;
         int escape_state = 0;
 
-        if(!strcmp(*filename, "--help"))
-            f = fmemopen(helpstr, strlen(helpstr), "r");
-        else if(strcmp(*filename, "-"))
-            f = fopen(*filename, "r");
-        
-        if(!f){
-            fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
-            return 2;
-        } 
+        wint_t helpstr_hack(FILE * _ignored) {
+            (void) _ignored;
+            static size_t idx = 0;
+            char c =  helpstr[idx++];
+            if (c)
+                return c;
+            idx = 0;
+            return WEOF;
+        }
 
-        while((c = fgetwc(f)) > 0){
+        if(!strcmp(*filename, "--help")) {
+            this_file_read_wchar = &helpstr_hack;
+            f = 0;
+
+        } else if(!strcmp(*filename, "-")) {
+            this_file_read_wchar = &fgetwc;
+            f = stdin;
+
+        } else {
+            this_file_read_wchar = &fgetwc;
+            f = fopen(*filename, "r");
+            if(!f){
+                fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
+                return 2;
+            } 
+        }
+        
+        while((c = this_file_read_wchar(f)) != WEOF) {
             if(colors){
                 find_escape_sequences(c, &escape_state);
 
@@ -165,11 +179,13 @@ int main(int argc, char **argv){
         printf("\n\033[0m");
         cc = -1;
 
-        fclose(f);
+        if (f) {
+            fclose(f);
 
-        if(c != WEOF && c != 0){
-            fprintf(stderr, "Error reading input file \"%s\": %s\n", *filename, strerror(errno));
-            return 2;
+            if(ferror(f)){
+                fprintf(stderr, "Error reading input file \"%s\": %s\n", *filename, strerror(errno));
+                return 2;
+            }
         }
     }
 }

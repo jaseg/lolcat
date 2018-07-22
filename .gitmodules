@@ -1,6 +1,0 @@
-[submodule "musl"]
-	path = musl
-	url = git://git.musl-libc.org/musl
-[submodule "memorymapping"]
-	path = memorymapping
-	url = https://github.com/NimbusKit/memorymapping
