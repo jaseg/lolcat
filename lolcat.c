@@ -74,6 +74,7 @@ void version(){
 }
 
 int main(int argc, char **argv){
+    char *default_argv[] = {"-"};
     int cc=-1, i, l=0;
     wint_t c;
     int colors=1;
@@ -115,8 +116,7 @@ int main(int argc, char **argv){
     char **inputs = argv+i;
     char **inputs_end = argv+argc;
     if(inputs == inputs_end){
-        char *foo[] = {"-"};
-        inputs = foo;
+        inputs = default_argv;
         inputs_end = inputs+1;
     }
 
