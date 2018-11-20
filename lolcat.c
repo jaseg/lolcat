@@ -51,7 +51,7 @@ static char helpstr[] = "\n"
 #define ARRAY_SIZE(foo) (sizeof(foo) / sizeof(foo[0]))
 const unsigned char codes[] = { 39, 38, 44, 43, 49, 48, 84, 83, 119, 118, 154, 148, 184, 178, 214, 208, 209, 203, 204, 198, 199, 163, 164, 128, 129, 93, 99, 63, 69, 33 };
 
-void find_escape_sequences(int c, int* state)
+void find_escape_sequences(wint_t c, int* state)
 {
     if (c == '\033') { /* Escape sequence YAY */
         *state = 1;
@@ -65,22 +65,24 @@ void find_escape_sequences(int c, int* state)
 
 void usage()
 {
-    printf("Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n");
+    wprintf(L"Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n");
     exit(1);
 }
 
 void version()
 {
-    printf("lolcat version 0.1, (c) 2014 jaseg\n");
+    wprintf(L"lolcat version 0.1, (c) 2014 jaseg\n");
     exit(0);
 }
 
 int main(int argc, char** argv)
 {
+    int FD_STDOUT = fileno(stdout);
+    int IS_TTY    = isatty(FD_STDOUT);
+    int colors    = IS_TTY;
+
     char* default_argv[] = { "-" };
     int cc = -1, i, l = 0;
-    wint_t c;
-    int colors = 1;
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -123,11 +125,14 @@ int main(int argc, char** argv)
         inputs_end = inputs + 1;
     }
 
-    setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "C.UTF-8");
 
     i = 0;
     for (char** filename = inputs; filename < inputs_end; filename++) {
-        wint_t (*this_file_read_wchar)(FILE*); /* Used for --help because fmemopen is universally broken when used with fgetwc */
+
+        /* Used for --help because fmemopen is universally broken when used with fgetwc */
+        wint_t (*this_file_read_wchar)(FILE*);
+
         FILE* f;
         int escape_state = 0;
 
@@ -154,40 +159,57 @@ int main(int argc, char** argv)
             this_file_read_wchar = &fgetwc;
             f = fopen(*filename, "r");
             if (!f) {
-                fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
+                fwprintf(stderr, L"Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
                 return 2;
             }
         }
 
-        while ((c = this_file_read_wchar(f)) != WEOF) {
+        while( 1 ) {
+
+            wint_t c = this_file_read_wchar(f);
+
+            if( c == WEOF )
+                break;
+
             if (colors) {
+
                 find_escape_sequences(c, &escape_state);
 
                 if (!escape_state) {
                     if (c == '\n') {
+
                         l++;
                         i = 0;
+
                     } else {
-                        int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                        if (cc != ncc)
-                            printf("\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
+
+                        int ncc = offx * ARRAY_SIZE(codes) + 
+                                  (int)((i += wcwidth(c)) * freq_h + l * freq_v);
+
+                        if (cc != ncc) {
+
+                            wprintf(L"\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
+                        }
                     }
                 }
             }
 
-            printf("%lc", c);
+            putwchar(c);
 
             if (escape_state == 2)
-                printf("\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
+                wprintf(L"\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
         }
-        printf("\n\033[0m");
+
+        if( colors )
+            wprintf(L"\n\033[0m");
+
         cc = -1;
 
         if (f) {
             fclose(f);
 
             if (ferror(f)) {
-                fprintf(stderr, "Error reading input file \"%s\": %s\n", *filename, strerror(errno));
+                fwprintf(stderr, L"Error reading input file \"%s\": %s\n", *filename, strerror(errno));
                 return 2;
             }
         }
