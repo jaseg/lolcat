@@ -36,6 +36,7 @@ static char helpstr[] = "\n"
                         "              -h <d>:   Horizontal rainbow frequency (default: 0.23)\n"
                         "              -v <d>:   Vertical rainbow frequency (default: 0.1)\n"
                         "                  -f:   Force color even when stdout is not a tty\n"
+                        "                  -l:   Use encoding from system locale instead of assuming UTF-8\n"
                         "           --version:   Print version and exit\n"
                         "              --help:   Show this message\n"
                         "\n"
@@ -81,6 +82,7 @@ int main(int argc, char** argv)
     int cc = -1, i, l = 0;
     wint_t c;
     int colors    = isatty(STDOUT_FILENO);
+    int force_locale = 1;
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -107,6 +109,8 @@ int main(int argc, char** argv)
             }
         } else if (!strcmp(argv[i], "-f")) {
             colors = 1;
+        } else if (!strcmp(argv[i], "-l")) {
+            force_locale = 0;
         } else if (!strcmp(argv[i], "--version")) {
             version();
         } else {
@@ -123,7 +127,10 @@ int main(int argc, char** argv)
         inputs_end = inputs + 1;
     }
 
-    setlocale(LC_ALL, "");
+    if (force_locale)
+        setlocale(LC_ALL, "C.UTF-8");
+    else
+        setlocale(LC_ALL, "");
 
     i = 0;
     for (char** filename = inputs; filename < inputs_end; filename++) {
