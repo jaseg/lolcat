@@ -65,13 +65,13 @@ void find_escape_sequences(wint_t c, int* state)
 
 void usage()
 {
-    printf("Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n");
+    wprintf(L"Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n");
     exit(1);
 }
 
 void version()
 {
-    printf("lolcat version 0.1, (c) 2014 jaseg\n");
+    wprintf(L"lolcat version 0.1, (c) 2014 jaseg\n");
     exit(0);
 }
 
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
             this_file_read_wchar = &fgetwc;
             f = fopen(*filename, "r");
             if (!f) {
-                fprintf(stderr, "Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
+                fwprintf(stderr, L"Cannot open input file \"%s\": %s\n", *filename, strerror(errno));
                 return 2;
             }
         }
@@ -170,15 +170,15 @@ int main(int argc, char** argv)
                     } else {
                         int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
                         if (cc != ncc)
-                            printf("\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
+                            wprintf(L"\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
                     }
                 }
             }
 
-            printf("%lc", c);
+            putwchar(c);
 
             if (escape_state == 2)
-                printf("\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
+                wprintf(L"\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
         }
         printf("\n\033[0m");
         cc = -1;
@@ -187,7 +187,7 @@ int main(int argc, char** argv)
             fclose(f);
 
             if (ferror(f)) {
-                fprintf(stderr, "Error reading input file \"%s\": %s\n", *filename, strerror(errno));
+                fwprintf(stderr, L"Error reading input file \"%s\": %s\n", *filename, strerror(errno));
                 return 2;
             }
         }
