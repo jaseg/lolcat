@@ -80,7 +80,7 @@ int main(int argc, char** argv)
     char* default_argv[] = { "-" };
     int cc = -1, i, l = 0;
     wint_t c;
-    int colors = 1;
+    int colors    = isatty(STDOUT_FILENO);
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -180,7 +180,10 @@ int main(int argc, char** argv)
             if (escape_state == 2)
                 wprintf(L"\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
         }
-        printf("\n\033[0m");
+
+        if (colors)
+            wprintf(L"\n\033[0m");
+
         cc = -1;
 
         if (f) {
