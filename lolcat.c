@@ -76,6 +76,17 @@ static void version(void)
     exit(0);
 }
 
+static wint_t helpstr_hack(FILE * _ignored)
+{
+    (void)_ignored;
+    static size_t idx = 0;
+    char c = helpstr[idx++];
+    if (c)
+        return c;
+    idx = 0;
+    return WEOF;
+}
+
 int main(int argc, char** argv)
 {
     char* default_argv[] = { "-" };
@@ -137,17 +148,6 @@ int main(int argc, char** argv)
         wint_t (*this_file_read_wchar)(FILE*); /* Used for --help because fmemopen is universally broken when used with fgetwc */
         FILE* f;
         int escape_state = 0;
-
-        wint_t helpstr_hack(FILE * _ignored)
-        {
-            (void)_ignored;
-            static size_t idx = 0;
-            char c = helpstr[idx++];
-            if (c)
-                return c;
-            idx = 0;
-            return WEOF;
-        }
 
         if (!strcmp(*filename, "--help")) {
             this_file_read_wchar = &helpstr_hack;
