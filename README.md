@@ -15,7 +15,9 @@
 There's an [AUR package](https://aur.archlinux.org/packages/c-lolcat):
 
 ```bash
-$ yaourt -S c-lolcat
+$ git clone https://aur.archlinux.org/packages/c-lolcat
+$ cd c-lolcat
+$ makepkg -csi
 ```
 
 ### Ubuntu (Snap)
