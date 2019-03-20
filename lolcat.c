@@ -138,7 +138,7 @@ int main(int argc, char** argv)
         inputs_end = inputs + 1;
     }
 
-    if (force_locale)
+    if (force_locale && !strstr(getenv("LANG"), "UTF-8"))
         setlocale(LC_ALL, "C.UTF-8");
     else
         setlocale(LC_ALL, "");
