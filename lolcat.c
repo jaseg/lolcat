@@ -189,7 +189,7 @@ int main(int argc, char** argv)
         }
 
         if (colors)
-            wprintf(L"\n\033[0m");
+            wprintf(L"\033[0m");
 
         cc = -1;
 
