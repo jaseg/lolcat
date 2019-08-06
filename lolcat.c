@@ -47,9 +47,9 @@ static char helpstr[] = "\n"
                         "  lolcat            Copy standard input to standard output.\n"
                         "  fortune | lolcat  Display a rainbow cookie.\n"
                         "\n"
-                        "Report lolcat bugs to <http://www.github.com/jaseg/lolcat/issues>\n"
-                        "lolcat home page: <http://www.github.com/jaseg/lolcat/>\n"
-                        "Original idea: <http://www.github.com/busyloop/lolcat/>\n";
+                        "Report lolcat bugs to <https://github.com/jaseg/lolcat/issues>\n"
+                        "lolcat home page: <https://github.com/jaseg/lolcat/>\n"
+                        "Original idea: <https://github.com/busyloop/lolcat/>\n";
 
 #define ARRAY_SIZE(foo) (sizeof(foo) / sizeof(foo[0]))
 const unsigned char codes[] = { 39, 38, 44, 43, 49, 48, 84, 83, 119, 118, 154, 148, 184, 178, 214, 208, 209, 203, 204, 198, 199, 163, 164, 128, 129, 93, 99, 63, 69, 33 };
