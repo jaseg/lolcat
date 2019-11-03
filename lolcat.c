@@ -37,6 +37,7 @@ static char helpstr[] = "\n"
                         "              -v <d>:   Vertical rainbow frequency (default: 0.1)\n"
                         "                  -f:   Force color even when stdout is not a tty\n"
                         "                  -l:   Use encoding from system locale instead of assuming UTF-8\n"
+                        "                  -r:   Random colors\n"
                         "           --version:   Print version and exit\n"
                         "              --help:   Show this message\n"
                         "\n"
@@ -94,6 +95,7 @@ int main(int argc, char** argv)
     wint_t c;
     int colors    = isatty(STDOUT_FILENO);
     int force_locale = 1;
+    int random = 0;
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -122,6 +124,8 @@ int main(int argc, char** argv)
             colors = 1;
         } else if (!strcmp(argv[i], "-l")) {
             force_locale = 0;
+        } else if (!strcmp(argv[i], "-r")) {
+            random = 1;
         } else if (!strcmp(argv[i], "--version")) {
             version();
         } else {
@@ -131,6 +135,11 @@ int main(int argc, char** argv)
         }
     }
 
+    int rand_offset = 0;
+    if (random) {
+        srand(time(NULL));
+        rand_offset = rand();
+    }
     char** inputs = argv + i;
     char** inputs_end = argv + argc;
     if (inputs == inputs_end) {
@@ -178,7 +187,7 @@ int main(int argc, char** argv)
                     } else {
                         int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
                         if (cc != ncc)
-                            wprintf(L"\033[38;5;%hhum", codes[(cc = ncc) % ARRAY_SIZE(codes)]);
+                            wprintf(L"\033[38;5;%hhum", codes[(rand_offset + (cc = ncc)) % ARRAY_SIZE(codes)]);
                     }
                 }
             }
@@ -186,7 +195,7 @@ int main(int argc, char** argv)
             putwchar(c);
 
             if (escape_state == 2)
-                wprintf(L"\033[38;5;%hhum", codes[cc % ARRAY_SIZE(codes)]);
+                wprintf(L"\033[38;5;%hhum", codes[(rand_offset + cc) % ARRAY_SIZE(codes)]);
         }
 
         if (colors)
