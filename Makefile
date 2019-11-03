@@ -2,13 +2,16 @@
 CC ?= gcc
 LOLCAT_SRC ?= lolcat.c
 CENSOR_SRC ?= censor.c
-CFLAGS ?= -std=c11 -Wall -Wextra -g
+CFLAGS ?= -std=c11 -Wall -Wextra
 
 DESTDIR ?= /usr/local/bin
 
 all: lolcat censor
 
-.PHONY: install clean
+debug: CFLAGS += -g
+debug: all
+
+.PHONY: install clean debug
 
 lolcat: $(LOLCAT_SRC)
 	$(CC) $(CFLAGS) -o $@ $^
@@ -22,4 +25,3 @@ install: lolcat censor
 
 clean:
 	rm -f lolcat censor
-
