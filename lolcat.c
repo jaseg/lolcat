@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <wchar.h>
+#include <time.h>
 
 static char helpstr[] = "\n"
                         "Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n"
