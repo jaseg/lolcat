@@ -20,6 +20,12 @@ $ cd c-lolcat
 $ makepkg -csi
 ```
 
+### Fedora ###
+
+```bash
+$ dnf install lolcat
+```
+
 ### Ubuntu (Snap)
 
 See [this awesome blog post by a kind person from the internet](https://blog.simos.info/how-to-make-a-snap-package-for-lolcat-with-snapcraft-on-ubuntu/):
