@@ -2,7 +2,7 @@
 CC ?= gcc
 LOLCAT_SRC ?= lolcat.c
 CENSOR_SRC ?= censor.c
-CFLAGS ?= -std=c11 -Wall -Wextra -O3
+CFLAGS ?= -std=c11 -Wall -Wextra -O3 -Wno-sign-compare
 
 DESTDIR ?= /usr/local/bin
 
