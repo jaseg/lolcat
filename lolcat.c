@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <wchar.h>
 #include <time.h>
+#include "math.h"
 
 static char helpstr[] = "\n"
                         "Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n"
@@ -97,6 +98,7 @@ int main(int argc, char** argv)
     int colors    = isatty(STDOUT_FILENO);
     int force_locale = 1;
     int random = 0;
+    int rgb = 1;
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -127,6 +129,8 @@ int main(int argc, char** argv)
             force_locale = 0;
         } else if (!strcmp(argv[i], "-r")) {
             random = 1;
+        } else if (!strcmp(argv[i], "-8bits")) {
+            rgb = 0;
         } else if (!strcmp(argv[i], "--version")) {
             version();
         } else {
@@ -136,6 +140,8 @@ int main(int argc, char** argv)
         }
     }
 
+    if (rgb)
+        freq_h /= 10;
     int rand_offset = 0;
     if (random) {
         srand(time(NULL));
@@ -186,9 +192,16 @@ int main(int argc, char** argv)
                         l++;
                         i = 0;
                     } else {
-                        int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                        if (cc != ncc)
-                            wprintf(L"\033[38;5;%hhum", codes[(rand_offset + (cc = ncc)) % ARRAY_SIZE(codes)]);
+                        if (rgb) {
+                            uint8_t red   = sin(((i += wcwidth(c)) * freq_h + l * freq_v) + 0            ) * 127 + 128;
+                            uint8_t green = sin(((i += wcwidth(c)) * freq_h + l * freq_v) + 2 * M_PI / 3 ) * 127 + 128;
+                            uint8_t blue  = sin(((i += wcwidth(c)) * freq_h + l * freq_v) + 4 * M_PI / 3 ) * 127 + 128;
+                            wprintf(L"\033[38;2;%d;%d;%dm", red, green, blue);
+                        } else {
+                            int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
+                            if (cc != ncc)
+                                wprintf(L"\033[38;5;%hhum", codes[(rand_offset + (cc = ncc)) % ARRAY_SIZE(codes)]);
+                        }
                     }
                 }
             }
