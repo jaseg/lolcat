@@ -109,7 +109,7 @@ int main(int argc, char** argv)
 
     for (i = 1; i < argc; i++) {
         char* endptr;
-        if (!strcmp(argv[i], "-h")) {
+        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--horizontal-frequency")) {
             if ((++i) < argc) {
                 freq_h = strtod(argv[i], &endptr);
                 if (*endptr)
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
             } else {
                 usage();
             }
-        } else if (!strcmp(argv[i], "-v")) {
+        } else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--vertical-frequency")) {
             if ((++i) < argc) {
                 freq_v = strtod(argv[i], &endptr);
                 if (*endptr)
@@ -125,13 +125,13 @@ int main(int argc, char** argv)
             } else {
                 usage();
             }
-        } else if (!strcmp(argv[i], "-f")) {
+        } else if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--force-color")) {
             colors = 1;
-        } else if (!strcmp(argv[i], "-l")) {
+        } else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--no-force-locale")) {
             force_locale = 0;
-        } else if (!strcmp(argv[i], "-r")) {
+        } else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--random")) {
             random = 1;
-        } else if (!strcmp(argv[i], "-b")) {
+        } else if (!strcmp(argv[i], "-b") || !strcmp(argv[i], "--24bit")) {
             rgb = 1;
         } else if (!strcmp(argv[i], "--version")) {
             version();
