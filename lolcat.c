@@ -195,7 +195,7 @@ int main(int argc, char** argv)
                     } else {
                         if (rgb) {
                             i += wcwidth(c);
-                            float theta = i * freq_h / 5.0f + l * freq_v;
+                            float theta = i * freq_h / 5.0f + l * freq_v + offx * M_PI;
                             float offset = 0.1;
 
                             uint8_t red   = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 0            ))) * 255.0f);
