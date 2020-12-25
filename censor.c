@@ -27,10 +27,10 @@
 
 int main(int argc, char** argv)
 {
+    char* foo[] = { "-" };
     char** inputs = argv + 1;
     char** inputs_end = argv + argc;
     if (inputs == inputs_end) {
-        char* foo[] = { "-" };
         inputs = foo;
         inputs_end = inputs + 1;
     }
