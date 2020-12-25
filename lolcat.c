@@ -1,4 +1,4 @@
-/* Copyright (C) 2014 jaseg <github@jaseg.net>
+/* Copyright (C) 2020 jaseg <github@jaseg.net>
  *
  * DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
  * Version 2, December 2004
@@ -205,10 +205,14 @@ int main(int argc, char** argv)
         cc = -1;
 
         if (f) {
-            fclose(f);
-
             if (ferror(f)) {
                 fwprintf(stderr, L"Error reading input file \"%s\": %s\n", *filename, strerror(errno));
+                fclose(f);
+                return 2;
+            }
+
+            if (fclose(f)) {
+                fwprintf(stderr, L"Error closing input file \"%s\": %s\n", *filename, strerror(errno));
                 return 2;
             }
         }
