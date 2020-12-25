@@ -156,10 +156,13 @@ int main(int argc, char** argv)
     }
 
     char* env_lang = getenv("LANG");
-    if (force_locale && env_lang && !strstr(env_lang, "UTF-8"))
-        setlocale(LC_ALL, "C.UTF-8");
-    else
+    if (force_locale && env_lang && !strstr(env_lang, "UTF-8")) {
+        if (!setlocale(LC_ALL, "C.UTF-8")) { /* C.UTF-8 may not be available on all platforms */
+            setlocale(LC_ALL, ""); /* Let's hope for the best */
+        }
+    } else {
         setlocale(LC_ALL, "");
+    }
 
     i = 0;
     for (char** filename = inputs; filename < inputs_end; filename++) {
@@ -215,7 +218,7 @@ int main(int argc, char** argv)
 
             putwchar(c);
 
-            if (escape_state == 2)
+            if (escape_state == 2) /* implies "colors" */
                 wprintf(L"\033[38;5;%hhum", codes[(rand_offset + cc) % ARRAY_SIZE(codes)]);
         }
 
