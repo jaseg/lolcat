@@ -140,8 +140,6 @@ int main(int argc, char** argv)
         }
     }
 
-    if (rgb)
-        freq_h /= 10;
     int rand_offset = 0;
     if (random) {
         srand(time(NULL));
@@ -191,12 +189,18 @@ int main(int argc, char** argv)
                     if (c == '\n') {
                         l++;
                         i = 0;
+
                     } else {
                         if (rgb) {
-                            uint8_t red   = sin(((i += wcwidth(c)) * freq_h + l * freq_v) + 0            ) * 127 + 128;
-                            uint8_t green = sin(((i += wcwidth(c)) * freq_h + l * freq_v) + 2 * M_PI / 3 ) * 127 + 128;
-                            uint8_t blue  = sin(((i += wcwidth(c)) * freq_h + l * freq_v) + 4 * M_PI / 3 ) * 127 + 128;
+                            i += wcwidth(c);
+                            float theta = i * freq_h / 5.0f + l * freq_v;
+                            float offset = 0.1;
+
+                            uint8_t red   = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 0            ))) * 255.0f);
+                            uint8_t green = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 2 * M_PI / 3 ))) * 255.0f);
+                            uint8_t blue  = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 4 * M_PI / 3 ))) * 255.0f);
                             wprintf(L"\033[38;2;%d;%d;%dm", red, green, blue);
+
                         } else {
                             int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
                             if (cc != ncc)
