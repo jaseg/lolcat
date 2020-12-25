@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     int colors    = isatty(STDOUT_FILENO);
     int force_locale = 1;
     int random = 0;
-    int rgb = 1;
+    int rgb = 0;
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -129,8 +129,8 @@ int main(int argc, char** argv)
             force_locale = 0;
         } else if (!strcmp(argv[i], "-r")) {
             random = 1;
-        } else if (!strcmp(argv[i], "-8bits")) {
-            rgb = 0;
+        } else if (!strcmp(argv[i], "-b")) {
+            rgb = 1;
         } else if (!strcmp(argv[i], "--version")) {
             version();
         } else {
