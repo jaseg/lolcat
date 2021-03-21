@@ -15,7 +15,7 @@
 There's an [AUR package](https://aur.archlinux.org/packages/c-lolcat):
 
 ```bash
-$ git clone https://aur.archlinux.org/packages/c-lolcat
+$ git clone https://aur.archlinux.org/c-lolcat.git
 $ cd c-lolcat
 $ makepkg -csi
 ```
