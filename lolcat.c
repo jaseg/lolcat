@@ -41,6 +41,7 @@ static char helpstr[] = "\n"
                         "             --no-force-locale, -l: Use encoding from system locale instead of\n"
                         "                                    assuming UTF-8\n"
                         "                      --random, -r: Random colors\n"
+                        "        --color_offset <d>, -o <d>: Start with a different color\n"
                         "                       --24bit, -b: Output in 24-bit \"true\" RGB mode (slower and\n"
                         "                                    not supported by all terminals)\n"
                         "                         --version: Print version and exit\n"
@@ -101,6 +102,7 @@ int main(int argc, char** argv)
     int colors    = isatty(STDOUT_FILENO);
     int force_locale = 1;
     int random = 0;
+    int start_color = 0;
     int rgb = 0;
     double freq_h = 0.23, freq_v = 0.1;
 
@@ -132,6 +134,14 @@ int main(int argc, char** argv)
             force_locale = 0;
         } else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--random")) {
             random = 1;
+        } else if (!strcmp(argv[i], "-o") || !strcmp(argv[i], "--color_offset")) {
+            if ((++i) < argc) {
+                start_color = strtod(argv[i], &endptr);
+                if (*endptr)
+                    usage();
+            } else {
+                usage();
+            }
         } else if (!strcmp(argv[i], "-b") || !strcmp(argv[i], "--24bit")) {
             rgb = 1;
         } else if (!strcmp(argv[i], "--version")) {
@@ -199,7 +209,7 @@ int main(int argc, char** argv)
                     } else {
                         if (rgb) {
                             i += wcwidth(c);
-                            float theta = i * freq_h / 5.0f + l * freq_v + (offx + 2.0f * rand_offset / RAND_MAX) * M_PI;
+                            float theta = i * freq_h / 5.0f + l * freq_v + (offx + 2.0f * (rand_offset + start_color) / RAND_MAX) * M_PI;
                             float offset = 0.1;
 
                             uint8_t red   = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 0            ))) * 255.0f);
@@ -210,7 +220,7 @@ int main(int argc, char** argv)
                         } else {
                             int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
                             if (cc != ncc)
-                                wprintf(L"\033[38;5;%hhum", codes[(rand_offset + (cc = ncc)) % ARRAY_SIZE(codes)]);
+                                wprintf(L"\033[38;5;%hhum", codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
                         }
                     }
                 }
@@ -219,7 +229,7 @@ int main(int argc, char** argv)
             putwchar(c);
 
             if (escape_state == 2) /* implies "colors" */
-                wprintf(L"\033[38;5;%hhum", codes[(rand_offset + cc) % ARRAY_SIZE(codes)]);
+                wprintf(L"\033[38;5;%hhum", codes[(rand_offset + start_color + cc) % ARRAY_SIZE(codes)]);
         }
 
         if (colors)
