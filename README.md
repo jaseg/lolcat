@@ -37,7 +37,9 @@ $ snap install lolcat-c
 ### Mac
 
 Build loclcat with:
-```
+```bash
+$ ./autogen.sh
+$ ./configure
 $ make lolcat
 ```
 ...and put the resulting binary at a place of your choice.
@@ -45,6 +47,8 @@ $ make lolcat
 ### Others
 
 ```bash
+$ ./autogen.sh
+$ ./configure
 $ make && sudo make install
 ```
 
