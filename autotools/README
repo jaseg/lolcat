@@ -1,0 +1,7 @@
+This directory contains an autotools config for building lolcat for those who need it. This is an alternative to the
+Makefile provided in the git root. Run it like so:
+
+cd autotools # go here
+./autogen.sh
+./configure
+make
