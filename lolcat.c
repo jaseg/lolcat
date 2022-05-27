@@ -44,6 +44,7 @@ static char helpstr[] = "\n"
                         "        --color_offset <d>, -o <d>: Start with a different color\n"
                         "                       --24bit, -b: Output in 24-bit \"true\" RGB mode (slower and\n"
                         "                                    not supported by all terminals)\n"
+                        "                      --invert, -i: Invert foreground and background\n"
                         "                         --version: Print version and exit\n"
                         "                            --help: Show this message\n"
                         "\n"
@@ -104,6 +105,7 @@ int main(int argc, char** argv)
     int random = 0;
     int start_color = 0;
     int rgb = 0;
+    int invert = 0;
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -144,6 +146,8 @@ int main(int argc, char** argv)
             }
         } else if (!strcmp(argv[i], "-b") || !strcmp(argv[i], "--24bit")) {
             rgb = 1;
+        } else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--invert")) {
+            invert = 1;
         } else if (!strcmp(argv[i], "--version")) {
             version();
         } else {
@@ -205,6 +209,8 @@ int main(int argc, char** argv)
                     if (c == '\n') {
                         l++;
                         i = 0;
+                        if (invert)
+                            wprintf(L"\033[49m");
 
                     } else {
                         if (rgb) {
@@ -215,12 +221,22 @@ int main(int argc, char** argv)
                             uint8_t red   = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 0            ))) * 255.0f);
                             uint8_t green = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 2 * M_PI / 3 ))) * 255.0f);
                             uint8_t blue  = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 4 * M_PI / 3 ))) * 255.0f);
-                            wprintf(L"\033[38;2;%d;%d;%dm", red, green, blue);
+
+                            if (invert) {
+                                wprintf(L"\033[48;2;%d;%d;%dm", red, green, blue);
+                            } else {
+                                wprintf(L"\033[38;2;%d;%d;%dm", red, green, blue);
+                            }
 
                         } else {
                             int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                            if (cc != ncc)
-                                wprintf(L"\033[38;5;%hhum", codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
+                            if (cc != ncc) {
+                                if (invert) {
+                                    wprintf(L"\033[48;5;%hhum", codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
+                                } else {
+                                    wprintf(L"\033[38;5;%hhum", codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
+                                }
+                            }
                         }
                     }
                 }
