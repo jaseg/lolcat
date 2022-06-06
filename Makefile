@@ -1,4 +1,3 @@
-
 CC ?= gcc
 LOLCAT_SRC ?= lolcat.c
 CENSOR_SRC ?= censor.c
@@ -25,8 +24,8 @@ install: lolcat censor
 	install censor $(DESTDIR)/censor
 
 uninstall: lolcat censor
-        rm -f $(DESTDIR)/lolcat
-	rm -f $(DESTDIR/censor
+	rm -f $(DESTDIR)/lolcat
+	rm -f $(DESTDIR)/censor
 
 clean:
 	rm -f lolcat censor
