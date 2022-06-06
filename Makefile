@@ -24,5 +24,9 @@ install: lolcat censor
 	install lolcat $(DESTDIR)/lolcat
 	install censor $(DESTDIR)/censor
 
+uninstall: lolcat censor
+        rm -f $(DESTDIR)/lolcat
+	rm -f $(DESTDIR/censor
+
 clean:
 	rm -f lolcat censor
