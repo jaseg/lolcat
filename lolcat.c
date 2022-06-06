@@ -41,6 +41,7 @@ static char helpstr[] = "\n"
                         "             --no-force-locale, -l: Use encoding from system locale instead of\n"
                         "                                    assuming UTF-8\n"
                         "                      --random, -r: Random colors\n"
+                        "                --seed <d>, -s <d>: Random colors based on given seed, implies --random\n"
                         "        --color_offset <d>, -o <d>: Start with a different color\n"
                         "                       --24bit, -b: Output in 24-bit \"true\" RGB mode (slower and\n"
                         "                                    not supported by all terminals)\n"
@@ -104,6 +105,7 @@ int main(int argc, char** argv)
     int colors    = isatty(STDOUT_FILENO);
     int force_locale = 1;
     int random = 0;
+    unsigned int seed = time(NULL);
     int start_color = 0;
     int rgb = 0;
     int ansi16 = 0;
@@ -137,6 +139,15 @@ int main(int argc, char** argv)
             force_locale = 0;
         } else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--random")) {
             random = 1;
+        } else if (!strcmp(argv[i], "-S") || !strcmp(argv[i], "--seed")) {
+            random = 1;
+            if ((++i) < argc) {
+                seed = strtoul(argv[i], &endptr, 10);
+                if (*endptr)
+                    usage();
+            } else {
+                usage();
+            }
         } else if (!strcmp(argv[i], "-o") || !strcmp(argv[i], "--color_offset")) {
             if ((++i) < argc) {
                 start_color = strtod(argv[i], &endptr);
@@ -165,9 +176,10 @@ int main(int argc, char** argv)
 
     int rand_offset = 0;
     if (random) {
-        srand(time(NULL));
+        srand(seed);
         rand_offset = rand();
     }
+
     char** inputs = argv + i;
     char** inputs_end = argv + argc;
     if (inputs == inputs_end) {
