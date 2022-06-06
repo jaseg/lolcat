@@ -221,22 +221,12 @@ int main(int argc, char** argv)
                             uint8_t red   = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 0            ))) * 255.0f);
                             uint8_t green = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 2 * M_PI / 3 ))) * 255.0f);
                             uint8_t blue  = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 4 * M_PI / 3 ))) * 255.0f);
-
-                            if (invert) {
-                                wprintf(L"\033[48;2;%d;%d;%dm", red, green, blue);
-                            } else {
-                                wprintf(L"\033[38;2;%d;%d;%dm", red, green, blue);
-                            }
+                            wprintf(L"\033[%d;2;%d;%d;%dm", (invert ? 48 : 38), red, green, blue);
 
                         } else {
                             int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                            if (cc != ncc) {
-                                if (invert) {
-                                    wprintf(L"\033[48;5;%hhum", codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
-                                } else {
-                                    wprintf(L"\033[38;5;%hhum", codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
-                                }
-                            }
+                            if (cc != ncc)
+                                wprintf(L"\033[%d;5;%hhum", (invert ? 48 : 38), codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
                         }
                     }
                 }
