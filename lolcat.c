@@ -40,7 +40,7 @@ static char helpstr[] = "\n"
                         "                 --force-color, -f: Force color even when stdout is not a tty\n"
                         "             --no-force-locale, -l: Use encoding from system locale instead of\n"
                         "                                    assuming UTF-8\n"
-                        "                      --random, -r: Random colors\n"
+                        "                --seed <d>, -S <d>: Rainbow seed, 0 = random\n"
                         "        --color_offset <d>, -o <d>: Start with a different color\n"
                         "                       --24bit, -b: Output in 24-bit \"true\" RGB mode (slower and\n"
                         "                                    not supported by all terminals)\n"
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
     wint_t c;
     int colors    = isatty(STDOUT_FILENO);
     int force_locale = 1;
-    int random = 0;
+    int seed = 0;
     int start_color = 0;
     int rgb = 0;
     double freq_h = 0.23, freq_v = 0.1;
@@ -132,8 +132,14 @@ int main(int argc, char** argv)
             colors = 1;
         } else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--no-force-locale")) {
             force_locale = 0;
-        } else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--random")) {
-            random = 1;
+        } else if (!strcmp(argv[i], "-S") || !strcmp(argv[i], "--seed")) {
+            if ((++i) < argc) {
+                seed = strtod(argv[i], &endptr);
+                if (*endptr)
+                    usage();
+            } else {
+                usage();
+            }
         } else if (!strcmp(argv[i], "-o") || !strcmp(argv[i], "--color_offset")) {
             if ((++i) < argc) {
                 start_color = strtod(argv[i], &endptr);
@@ -153,11 +159,13 @@ int main(int argc, char** argv)
         }
     }
 
-    int rand_offset = 0;
-    if (random) {
+    if (seed == 0) {
         srand(time(NULL));
-        rand_offset = rand();
+    } else {
+        srand(seed);
     }
+    int rand_offset = rand();
+
     char** inputs = argv + i;
     char** inputs_end = argv + argc;
     if (inputs == inputs_end) {
