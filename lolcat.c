@@ -102,15 +102,53 @@ void rgb_interpolate(union rgb_c *start, union rgb_c *end, union rgb_c *out, dou
     out->b = start->b + (end->b - start->b)*f;
 }
 
-static void find_escape_sequences(wint_t c, int* state)
+enum esc_st {
+    ST_NONE=0,
+    ST_ESC_BEGIN,
+    ST_ESC_STRING,
+    ST_ESC_CSI,
+    ST_ESC_STRING_TERM,
+    ST_ESC_CSI_TERM,
+    ST_ESC_TERM,
+};
+
+static enum esc_st find_escape_sequences(wint_t c, enum esc_st st)
 {
-    if (c == '\033') { /* Escape sequence YAY */
-        *state = 1;
-    } else if (*state == 1) {
-        if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))
-            *state = 2;
+    if (st == ST_NONE && c == '\033') { /* Escape sequence YAY */
+        return ST_ESC_BEGIN;
+
+    } else if (st == ST_ESC_BEGIN) {
+        if (c == '[') {
+            return ST_ESC_CSI;
+        } else if (c == 'P' || c == ']' || c == 'X' || c == '^' || c == '_') {
+            return ST_ESC_STRING;
+        } else {
+            return ST_ESC_TERM;
+        }
+
+    } else if (st == ST_ESC_CSI) {
+        if (0x40 <= c && c <= 0x7e) {
+            return ST_ESC_CSI_TERM;
+        } else {
+            return st;
+        }
+
+    } else if (st == ST_ESC_STRING) {
+        if (c == '\033') {
+            return ST_ESC_STRING_TERM;
+        } else {
+            return st;
+        }
+
+    } else if (st == ST_ESC_STRING_TERM) {
+        if (c == '\\') {
+            return ST_ESC_TERM;
+        } else {
+            return ST_ESC_STRING;
+        }
+
     } else {
-        *state = 0;
+        return ST_NONE;
     }
 }
 
@@ -296,7 +334,7 @@ int main(int argc, char** argv)
     for (char** filename = inputs; filename < inputs_end; filename++) {
         wint_t (*this_file_read_wchar)(FILE*); /* Used for --help because fmemopen is universally broken when used with fgetwc */
         FILE* f;
-        int escape_state = 0;
+        int escape_state = ST_NONE;
 
         if (!strcmp(*filename, "--help")) {
             this_file_read_wchar = &helpstr_hack;
@@ -317,7 +355,7 @@ int main(int argc, char** argv)
 
         while ((c = this_file_read_wchar(f)) != WEOF) {
             if (colors) {
-                find_escape_sequences(c, &escape_state);
+                escape_state = find_escape_sequences(c, escape_state);
 
                 if (!escape_state) {
                     if (c == '\n') {
@@ -377,7 +415,7 @@ int main(int argc, char** argv)
 
             putwchar(c);
 
-            if (escape_state == 2) { /* implies "colors" */
+            if (escape_state == ST_ESC_CSI_TERM) { /* implies "colors" */
                 wprintf(L"\033[38;5;%hhum", codes[(rand_offset + start_color + cc) % ARRAY_SIZE(codes)]);
             }
         }
