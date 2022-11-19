@@ -24,7 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/param.h>
 #include <unistd.h>
+#include <limits.h>
 #include <wchar.h>
 #include <time.h>
 #include "math.h"
@@ -41,8 +43,11 @@ static char helpstr[] = "\n"
                         "             --no-force-locale, -l: Use encoding from system locale instead of\n"
                         "                                    assuming UTF-8\n"
                         "                      --random, -r: Random colors\n"
-                        "                --seed <d>, -s <d>: Random colors based on given seed, implies --random\n"
+                        "                --seed <d>, -s <d>: Random colors based on given seed,\n"
+                        "                                    implies --random\n"
                         "        --color_offset <d>, -o <d>: Start with a different color\n"
+                        "            --gradient <g>, -g <g>: Use color gradient from given start to end color,\n"
+                        "                                    format: -g ff4444:00ffff\n"
                         "                       --24bit, -b: Output in 24-bit \"true\" RGB mode (slower and\n"
                         "                                    not supported by all terminals)\n"
                         "                     --16color, -x: Output in 16-color mode for basic terminals\n"
@@ -62,6 +67,110 @@ static char helpstr[] = "\n"
 #define ARRAY_SIZE(foo) (sizeof(foo) / sizeof(foo[0]))
 const unsigned char codes[] = { 39, 38, 44, 43, 49, 48, 84, 83, 119, 118, 154, 148, 184, 178, 214, 208, 209, 203, 204, 198, 199, 163, 164, 128, 129, 93, 99, 63, 69, 33 };
 const unsigned char codes16[] = {31, 33, 32, 36, 34, 35, 95, 94, 96, 92, 93, 91};
+unsigned int codes_gradient[128];
+
+union rgb_c {
+    struct {
+        unsigned char b;
+        unsigned char g;
+        unsigned char r;
+    };
+    unsigned int i;
+};
+
+struct hsv_c {
+    double h;
+    double s;
+    double v;
+};
+
+#include "xterm256lut.h"
+
+int xterm256lookup(union rgb_c *in) {
+    size_t min_i;
+    int min_v = INT_MAX;
+    for (size_t i=0; i<ARRAY_SIZE(xterm256lut); i++) {
+        int dr = in->r - xterm256lut[i].r;
+        int dg = in->g - xterm256lut[i].g;
+        int db = in->b - xterm256lut[i].b;
+        int d = dr*dr + dg*dg + db*db;
+        if (d < min_v) {
+            min_v = d;
+            min_i = i;
+        }
+    }
+    return 16 + min_i;
+}
+
+void rgb2hsv(union rgb_c *in, struct hsv_c *out) {
+    double r = in->r/255.0, g = in->g/255.0, b = in->b/255.0;
+    double fCMax = MAX(MAX(r, g), b);
+    double fCMin = MIN(MIN(r, g), b);
+    double fDelta = fCMax - fCMin;
+
+    out->v = fCMax;
+    if(fDelta > 0) {
+        if(fCMax == r) {
+            out->h = 60 * (fmod(((g - b) / fDelta), 6));
+        } else if(fCMax == g) {
+            out->h = 60 * (((b - r) / fDelta) + 2);
+        } else if(fCMax == b) {
+            out->h = 60 * (((r - g) / fDelta) + 4);
+        }
+
+        if(out->h < 0) {
+            out->h = 360 + out->h;
+        }
+
+        out->s = fCMax > 0 ? fDelta / fCMax : 0;
+    } else {
+        out->h = 0;
+        out->s = 0;
+    }
+}
+
+void hsv2rgb(struct hsv_c *in, union rgb_c *out) {
+    double fC = in->v * in->s;
+    double fHPrime = fmod(in->h / 60.0, 6);
+    double fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
+    double fM = in->v - fC;
+
+    switch ((int)fHPrime) {
+        case 0: out->r = (fC + fM)*255; out->g = (fX + fM)*255; out->b = 0; break;
+        case 1: out->g = (fC + fM)*255; out->r = (fX + fM)*255; out->b = 0; break;
+        case 2: out->g = (fC + fM)*255; out->b = (fX + fM)*255; out->r = 0; break;
+        case 3: out->b = (fC + fM)*255; out->g = (fX + fM)*255; out->r = 0; break;
+        case 4: out->b = (fC + fM)*255; out->r = (fX + fM)*255; out->g = 0; break;
+        case 5: out->r = (fC + fM)*255; out->b = (fX + fM)*255; out->g = 0; break;
+        default: out->r = 0; out->g = 0; out->b = 0; break;
+    }
+}
+
+void rgb_interpolate(union rgb_c *start, union rgb_c *end, union rgb_c *out, double f) {
+    out->r = start->r + (end->r - start->r)*f;
+    out->g = start->g + (end->g - start->g)*f;
+    out->b = start->b + (end->b - start->b)*f;
+}
+
+void hsv_interpolate(struct hsv_c *start, struct hsv_c *end, union rgb_c *out, double f) {
+    double hd = end->h - start->h;
+    if (hd > 180) {
+        hd -= 360;
+    } else if (hd < -180) {
+        hd += 360;
+    }
+
+    struct hsv_c hsv_intermediate = {
+        .h = start->h + hd*f,
+        .s = start->s + (end->s - start->s)*f,
+        .v = start->v + (end->v - start->v)*f};
+    if (hsv_intermediate.h < 0) {
+        hsv_intermediate.h += 360;
+    } else if (hsv_intermediate.h > 360) {
+        hsv_intermediate.h -= 360;
+    }
+    hsv2rgb(&hsv_intermediate, out);
+}
 
 static void find_escape_sequences(wint_t c, int* state)
 {
@@ -111,6 +220,8 @@ int main(int argc, char** argv)
     int rgb = 0;
     int ansi16 = 0;
     int invert = 0;
+    int gradient = 0;
+    union rgb_c rgb_start, rgb_end;
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -164,6 +275,30 @@ int main(int argc, char** argv)
             ansi16 = 1;
         } else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--invert")) {
             invert = 1;
+        } else if (!strcmp(argv[i], "-g") || !strcmp(argv[i], "--gradient")) {
+            if ((++i) >= argc) {
+                usage();
+            }
+
+            if (strlen(argv[i]) != 6+1+6 || argv[i][6] != ':') {
+                wprintf(L"Invalid format for --gradient\n");
+                usage();
+            }
+
+            argv[i][6] = '\0';
+            rgb_start.i = strtoul(argv[i], &endptr, 16);
+            if (*endptr) {
+                wprintf(L"Invalid format for --gradient\n");
+                usage();
+            }
+
+            rgb_end.i = strtoul(argv[i]+6+1, &endptr, 16);
+            if (*endptr) {
+                wprintf(L"Invalid format for --gradient\n");
+                usage();
+            }
+
+            gradient = 1;
         } else if (!strcmp(argv[i], "--version")) {
             version();
         } else {
@@ -176,6 +311,25 @@ int main(int argc, char** argv)
     if (rgb && ansi16) {
         wprintf(L"Only one of --24bit and --16color can be given at a time\n");
         usage();
+    }
+
+    if (gradient) {
+        if (ansi16) {
+            wprintf(L"--gradient and --16color are mutually exclusive\n");
+            usage();
+        }
+
+        if (!rgb) {
+            double correction_factor =(2*ARRAY_SIZE(codes_gradient)) / (double)ARRAY_SIZE(codes);
+            freq_h *= correction_factor;
+            freq_v *= correction_factor;
+            for (size_t i=0; i<ARRAY_SIZE(codes_gradient); i++) {
+                double f = i / (double)(ARRAY_SIZE(codes_gradient) - 1);
+                union rgb_c rgb_intermediate;
+                rgb_interpolate(&rgb_start, &rgb_end, &rgb_intermediate, f);
+                codes_gradient[i] = xterm256lookup(&rgb_intermediate);
+            }
+        }
     }
 
     if (invert) {
@@ -246,23 +400,46 @@ int main(int argc, char** argv)
                     } else {
                         if (rgb) {
                             i += wcwidth(c);
-                            float theta = i * freq_h / 5.0f + l * freq_v + (offx + 2.0f * (rand_offset + start_color) / RAND_MAX) * M_PI;
-                            float offset = 0.1;
+                            float theta = i * freq_h / 5.0f + l * freq_v + (offx + 2.0f * (rand_offset + start_color) / RAND_MAX)*M_PI;
 
-                            uint8_t red   = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 0            ))) * 255.0f);
-                            uint8_t green = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 2 * M_PI / 3 ))) * 255.0f);
-                            uint8_t blue  = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 4 * M_PI / 3 ))) * 255.0f);
-                            wprintf(L"\033[%d;2;%d;%d;%dm", (invert ? 48 : 38), red, green, blue);
+                            union rgb_c c;
+                            if (gradient) {
+                                theta = fmodf(theta/2.0/M_PI, 2.0f);
+                                if (theta > 1.0f) {
+                                    theta = 2.0f - theta;
+                                }
+                                rgb_interpolate(&rgb_start, &rgb_end, &c, theta);
+                            } else {
+                                float offset = 0.1;
+                                c.r = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 0            ))) * 255.0f);
+                                c.g = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 2 * M_PI / 3 ))) * 255.0f);
+                                c.b = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 4 * M_PI / 3 ))) * 255.0f);
+                            }
+                            wprintf(L"\033[%d;2;%d;%d;%dm", (invert ? 48 : 38), c.r, c.g, c.b);
 
                         } else if (ansi16) {
                             int ncc = offx * ARRAY_SIZE(codes16) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                            if (cc != ncc)
+                            if (cc != ncc) {
                                 wprintf(L"\033[%hhum", (invert ? 10 : 0) + codes16[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes16)]);
+                            }
 
                         } else {
-                            int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                            if (cc != ncc)
-                                wprintf(L"\033[%d;5;%hhum", (invert ? 48 : 38), codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
+                            if (gradient) {
+                                int ncc = offx * ARRAY_SIZE(codes_gradient) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
+                                if (cc != ncc) {
+                                    size_t lookup = (rand_offset + start_color + (cc = ncc)) % (2*ARRAY_SIZE(codes_gradient));
+                                    if (lookup >= ARRAY_SIZE(codes_gradient)) {
+                                        lookup = 2*ARRAY_SIZE(codes_gradient) - 1 - lookup;
+                                    }
+                                    wprintf(L"\033[%d;5;%hhum", (invert ? 48 : 38), codes_gradient[lookup]);
+                                }
+
+                            } else {
+                                int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
+                                if (cc != ncc) {
+                                    wprintf(L"\033[%d;5;%hhum", (invert ? 48 : 38), codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
+                                }
+                            }
                         }
                     }
                 }
@@ -270,12 +447,14 @@ int main(int argc, char** argv)
 
             putwchar(c);
 
-            if (escape_state == 2) /* implies "colors" */
+            if (escape_state == 2) { /* implies "colors" */
                 wprintf(L"\033[38;5;%hhum", codes[(rand_offset + start_color + cc) % ARRAY_SIZE(codes)]);
+            }
         }
 
-        if (colors)
+        if (colors) {
             wprintf(L"\033[0m");
+        }
 
         cc = -1;
 
