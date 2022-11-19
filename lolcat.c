@@ -44,6 +44,7 @@ static char helpstr[] = "\n"
                         "        --color_offset <d>, -o <d>: Start with a different color\n"
                         "                       --24bit, -b: Output in 24-bit \"true\" RGB mode (slower and\n"
                         "                                    not supported by all terminals)\n"
+                        "                     --16color, -x: Output in 16-color mode for basic terminals\n"
                         "                         --version: Print version and exit\n"
                         "                            --help: Show this message\n"
                         "\n"
@@ -58,6 +59,7 @@ static char helpstr[] = "\n"
 
 #define ARRAY_SIZE(foo) (sizeof(foo) / sizeof(foo[0]))
 const unsigned char codes[] = { 39, 38, 44, 43, 49, 48, 84, 83, 119, 118, 154, 148, 184, 178, 214, 208, 209, 203, 204, 198, 199, 163, 164, 128, 129, 93, 99, 63, 69, 33 };
+const unsigned char codes16[] = {31, 33, 32, 36, 34, 35, 95, 94, 96, 92, 93, 91};
 
 static void find_escape_sequences(wint_t c, int* state)
 {
@@ -74,7 +76,7 @@ static void find_escape_sequences(wint_t c, int* state)
 static void usage(void)
 {
     wprintf(L"Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n");
-    exit(1);
+    exit(2);
 }
 
 static void version(void)
@@ -104,6 +106,7 @@ int main(int argc, char** argv)
     int random = 0;
     int start_color = 0;
     int rgb = 0;
+    int ansi16 = 0;
     double freq_h = 0.23, freq_v = 0.1;
 
     struct timeval tv;
@@ -144,6 +147,8 @@ int main(int argc, char** argv)
             }
         } else if (!strcmp(argv[i], "-b") || !strcmp(argv[i], "--24bit")) {
             rgb = 1;
+        } else if (!strcmp(argv[i], "-x") || !strcmp(argv[i], "--16color")) {
+            ansi16 = 1;
         } else if (!strcmp(argv[i], "--version")) {
             version();
         } else {
@@ -151,6 +156,11 @@ int main(int argc, char** argv)
                 i++;
             break;
         }
+    }
+
+    if (rgb && ansi16) {
+        wprintf(L"Only one of --24bit and --16color can be given at a time\n");
+        usage();
     }
 
     int rand_offset = 0;
@@ -216,6 +226,11 @@ int main(int argc, char** argv)
                             uint8_t green = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 2 * M_PI / 3 ))) * 255.0f);
                             uint8_t blue  = lrintf((offset + (1.0f - offset) * (0.5f + 0.5f * sin(theta + 4 * M_PI / 3 ))) * 255.0f);
                             wprintf(L"\033[38;2;%d;%d;%dm", red, green, blue);
+
+                        } else if (ansi16) {
+                            int ncc = offx * ARRAY_SIZE(codes16) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
+                            if (cc != ncc)
+                                wprintf(L"\033[%hhum", codes16[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes16)]);
 
                         } else {
                             int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
