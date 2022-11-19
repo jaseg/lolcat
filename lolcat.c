@@ -78,12 +78,6 @@ union rgb_c {
     unsigned int i;
 };
 
-struct hsv_c {
-    double h;
-    double s;
-    double v;
-};
-
 #include "xterm256lut.h"
 
 int xterm256lookup(union rgb_c *in) {
@@ -102,74 +96,10 @@ int xterm256lookup(union rgb_c *in) {
     return 16 + min_i;
 }
 
-void rgb2hsv(union rgb_c *in, struct hsv_c *out) {
-    double r = in->r/255.0, g = in->g/255.0, b = in->b/255.0;
-    double fCMax = MAX(MAX(r, g), b);
-    double fCMin = MIN(MIN(r, g), b);
-    double fDelta = fCMax - fCMin;
-
-    out->v = fCMax;
-    if(fDelta > 0) {
-        if(fCMax == r) {
-            out->h = 60 * (fmod(((g - b) / fDelta), 6));
-        } else if(fCMax == g) {
-            out->h = 60 * (((b - r) / fDelta) + 2);
-        } else if(fCMax == b) {
-            out->h = 60 * (((r - g) / fDelta) + 4);
-        }
-
-        if(out->h < 0) {
-            out->h = 360 + out->h;
-        }
-
-        out->s = fCMax > 0 ? fDelta / fCMax : 0;
-    } else {
-        out->h = 0;
-        out->s = 0;
-    }
-}
-
-void hsv2rgb(struct hsv_c *in, union rgb_c *out) {
-    double fC = in->v * in->s;
-    double fHPrime = fmod(in->h / 60.0, 6);
-    double fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
-    double fM = in->v - fC;
-
-    switch ((int)fHPrime) {
-        case 0: out->r = (fC + fM)*255; out->g = (fX + fM)*255; out->b = 0; break;
-        case 1: out->g = (fC + fM)*255; out->r = (fX + fM)*255; out->b = 0; break;
-        case 2: out->g = (fC + fM)*255; out->b = (fX + fM)*255; out->r = 0; break;
-        case 3: out->b = (fC + fM)*255; out->g = (fX + fM)*255; out->r = 0; break;
-        case 4: out->b = (fC + fM)*255; out->r = (fX + fM)*255; out->g = 0; break;
-        case 5: out->r = (fC + fM)*255; out->b = (fX + fM)*255; out->g = 0; break;
-        default: out->r = 0; out->g = 0; out->b = 0; break;
-    }
-}
-
 void rgb_interpolate(union rgb_c *start, union rgb_c *end, union rgb_c *out, double f) {
     out->r = start->r + (end->r - start->r)*f;
     out->g = start->g + (end->g - start->g)*f;
     out->b = start->b + (end->b - start->b)*f;
-}
-
-void hsv_interpolate(struct hsv_c *start, struct hsv_c *end, union rgb_c *out, double f) {
-    double hd = end->h - start->h;
-    if (hd > 180) {
-        hd -= 360;
-    } else if (hd < -180) {
-        hd += 360;
-    }
-
-    struct hsv_c hsv_intermediate = {
-        .h = start->h + hd*f,
-        .s = start->s + (end->s - start->s)*f,
-        .v = start->v + (end->v - start->v)*f};
-    if (hsv_intermediate.h < 0) {
-        hsv_intermediate.h += 360;
-    } else if (hsv_intermediate.h > 360) {
-        hsv_intermediate.h -= 360;
-    }
-    hsv2rgb(&hsv_intermediate, out);
 }
 
 static void find_escape_sequences(wint_t c, int* state)
