@@ -110,12 +110,28 @@ enum esc_st {
     ST_ESC_STRING_TERM,
     ST_ESC_CSI_TERM,
     ST_ESC_TERM,
+    NUM_ST
+};
+
+const char * esc_st_names[NUM_ST] = {
+    [ST_NONE]               = "NONE",
+    [ST_ESC_BEGIN]          = "BEGIN",
+    [ST_ESC_STRING]         = "STRING",
+    [ST_ESC_CSI]            = "CSI",
+    [ST_ESC_STRING_TERM]    = "STRING_TERM",
+    [ST_ESC_CSI_TERM]       = "CSI_TERM",
+    [ST_ESC_TERM]           = "TERM",
 };
 
 static enum esc_st find_escape_sequences(wint_t c, enum esc_st st)
 {
-    if (st == ST_NONE && c == '\033') { /* Escape sequence YAY */
-        return ST_ESC_BEGIN;
+
+    if (st == ST_NONE || st == ST_ESC_CSI_TERM) {
+        if (c == '\033') { /* Escape sequence YAY */
+            return ST_ESC_BEGIN;
+        } else {
+            return ST_NONE;
+        }
 
     } else if (st == ST_ESC_BEGIN) {
         if (c == '[') {
@@ -134,7 +150,9 @@ static enum esc_st find_escape_sequences(wint_t c, enum esc_st st)
         }
 
     } else if (st == ST_ESC_STRING) {
-        if (c == '\033') {
+        if (c == '\007') {
+            return ST_NONE;
+        } else if (c == '\033') {
             return ST_ESC_STRING_TERM;
         } else {
             return st;
@@ -142,7 +160,7 @@ static enum esc_st find_escape_sequences(wint_t c, enum esc_st st)
 
     } else if (st == ST_ESC_STRING_TERM) {
         if (c == '\\') {
-            return ST_ESC_TERM;
+            return ST_NONE;
         } else {
             return ST_ESC_STRING;
         }
@@ -155,6 +173,8 @@ static enum esc_st find_escape_sequences(wint_t c, enum esc_st st)
 static void usage(void)
 {
     wprintf(L"Usage: lolcat [-h horizontal_speed] [-v vertical_speed] [--] [FILES...]\n");
+    wprintf(L"\n");
+    wprintf(L"Use lolcat --help to print the full help text.\n");
     exit(2);
 }
 
@@ -355,9 +375,18 @@ int main(int argc, char** argv)
 
         while ((c = this_file_read_wchar(f)) != WEOF) {
             if (colors) {
-                escape_state = find_escape_sequences(c, escape_state);
 
-                if (!escape_state) {
+
+                escape_state = find_escape_sequences(c, escape_state);
+#ifdef ESC_DEBUG
+                fprintf(stderr, "%02x %c %s\n", c, c > 32 ? c : '.', esc_st_names[escape_state]);
+#endif
+
+                if (escape_state == ST_ESC_CSI_TERM) {
+                    putwchar(c);
+                }
+
+                if (escape_state == ST_NONE || escape_state == ST_ESC_CSI_TERM) {
                     if (c == '\n') {
                         l++;
                         i = 0;
@@ -366,8 +395,11 @@ int main(int argc, char** argv)
                         }
 
                     } else {
-                        if (rgb) {
+                        if (escape_state == ST_NONE) {
                             i += wcwidth(c);
+                        }
+
+                        if (rgb) {
                             float theta = i * freq_h / 5.0f + l * freq_v + (offx + 2.0f * (rand_offset + start_color) / RAND_MAX)*M_PI;
 
                             union rgb_c c;
@@ -386,15 +418,15 @@ int main(int argc, char** argv)
                             wprintf(L"\033[%d;2;%d;%d;%dm", (invert ? 48 : 38), c.r, c.g, c.b);
 
                         } else if (ansi16) {
-                            int ncc = offx * ARRAY_SIZE(codes16) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                            if (cc != ncc) {
+                            int ncc = offx * ARRAY_SIZE(codes16) + (int)(i * freq_h + l * freq_v);
+                            if (cc != ncc || escape_state == ST_ESC_CSI_TERM) {
                                 wprintf(L"\033[%hhum", (invert ? 10 : 0) + codes16[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes16)]);
                             }
 
                         } else {
                             if (gradient) {
-                                int ncc = offx * ARRAY_SIZE(codes_gradient) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                                if (cc != ncc) {
+                                int ncc = offx * ARRAY_SIZE(codes_gradient) + (int)(i * freq_h + l * freq_v);
+                                if (cc != ncc || escape_state == ST_ESC_CSI_TERM) {
                                     size_t lookup = (rand_offset + start_color + (cc = ncc)) % (2*ARRAY_SIZE(codes_gradient));
                                     if (lookup >= ARRAY_SIZE(codes_gradient)) {
                                         lookup = 2*ARRAY_SIZE(codes_gradient) - 1 - lookup;
@@ -403,8 +435,8 @@ int main(int argc, char** argv)
                                 }
 
                             } else {
-                                int ncc = offx * ARRAY_SIZE(codes) + (int)((i += wcwidth(c)) * freq_h + l * freq_v);
-                                if (cc != ncc) {
+                                int ncc = offx * ARRAY_SIZE(codes) + (int)(i * freq_h + l * freq_v);
+                                if (cc != ncc || escape_state == ST_ESC_CSI_TERM) {
                                     wprintf(L"\033[%d;5;%hhum", (invert ? 48 : 38), codes[(rand_offset + start_color + (cc = ncc)) % ARRAY_SIZE(codes)]);
                                 }
                             }
@@ -413,10 +445,8 @@ int main(int argc, char** argv)
                 }
             }
 
-            putwchar(c);
-
-            if (escape_state == ST_ESC_CSI_TERM) { /* implies "colors" */
-                wprintf(L"\033[38;5;%hhum", codes[(rand_offset + start_color + cc) % ARRAY_SIZE(codes)]);
+            if (escape_state != ST_ESC_CSI_TERM) {
+                putwchar(c);
             }
         }
 
