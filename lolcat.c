@@ -52,6 +52,8 @@ static char helpstr[] = "\n"
                         "                                    not supported by all terminals)\n"
                         "                     --16color, -x: Output in 16-color mode for basic terminals\n"
                         "                      --invert, -i: Invert foreground and background\n"
+                        "             --no-side-effects, -e: If other programs print to the same tty, keep their\n"
+                        "                                    output uncolored (emits much more control codes)\n"
                         "                         --version: Print version and exit\n"
                         "                            --help: Show this message\n"
                         "\n"
@@ -211,6 +213,7 @@ int main(int argc, char** argv)
     int gradient = 0;
     union rgb_c rgb_start, rgb_end;
     double freq_h = 0.23, freq_v = 0.1;
+    int prevent_side_effects = 0;
 
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -234,6 +237,8 @@ int main(int argc, char** argv)
             } else {
                 usage();
             }
+        } else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--no-side-effects")) {
+            prevent_side_effects = 1;
         } else if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--force-color")) {
             colors = 1;
         } else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--no-force-locale")) {
@@ -446,11 +451,16 @@ int main(int argc, char** argv)
             }
 
             if (escape_state != ST_ESC_CSI_TERM) {
-                putwchar(c);
+                if (prevent_side_effects) {
+                    wprintf(L"%c\033[0m", c);
+                    cc = -1;
+                } else {
+                    putwchar(c);
+                }
             }
         }
 
-        if (colors) {
+        if (colors && !prevent_side_effects) {
             wprintf(L"\033[0m");
         }
 
