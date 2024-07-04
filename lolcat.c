@@ -390,8 +390,11 @@ int main(int argc, char** argv)
                     if (c == '\n') {
                         l++;
                         i = 0;
+                        cc = -1;
                         if (invert) {
                             wprintf(L"\033[49m");
+                        } else {
+                            wprintf(L"\033[0m");
                         }
 
                     } else {
