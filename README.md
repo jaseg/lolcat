@@ -44,6 +44,8 @@ $ make lolcat
 
 ### Others
 
+Debian may need the `python-is-python3` package.
+
 ```bash
 $ make && sudo make install
 ```
