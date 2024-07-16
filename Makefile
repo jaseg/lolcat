@@ -16,10 +16,10 @@ xterm256lut.h: xterm256lut_gen.py
 	python $< > $@
 
 lolcat: lolcat.c xterm256lut.h
-	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
 censor: censor.c
-	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
 install: lolcat censor
 	install lolcat $(DESTDIR)/lolcat
