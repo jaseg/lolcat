@@ -1,7 +1,7 @@
 # Maintainer: Ricardo (XenGi) Band <email@ricardo.band>
 
 pkgname=c-lolcat
-pkgver=v1.3
+pkgver=v1.5
 pkgrel=1
 pkgdesc="High-performance implementation of lolcat"
 arch=('i686' 'x86_64')
