@@ -1,10 +1,10 @@
 # What?
 
-![](https://raw.githubusercontent.com/jaseg/lolcat/master/LOLCat-Rainbow.jpg)
+![](./LOLCat-Rainbow.jpg)
 
 ## Screenshot
 
-![](https://raw.githubusercontent.com/jaseg/lolcat/master/screenshot.png)
+![](./screenshot.png)
 
 ![](./sl.gif)
 
