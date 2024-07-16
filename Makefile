@@ -3,7 +3,7 @@ CC ?= gcc
 CFLAGS ?= -std=c11 -Wall -Wextra -O3 -Wno-sign-compare
 LIBS := -lm
 
-DESTDIR ?= /usr/local/bin
+PREFIX ?= /usr/local
 
 all: lolcat censor
 
@@ -22,8 +22,8 @@ censor: censor.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
 install: lolcat censor
-	install lolcat $(DESTDIR)/lolcat
-	install censor $(DESTDIR)/censor
+	install lolcat $(DESTDIR)$(PREFIX)/bin/lolcat
+	install censor $(DESTDIR)$(PREFIX)/bin/censor
 
 clean:
 	rm -f lolcat censor
