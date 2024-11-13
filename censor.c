@@ -14,7 +14,6 @@
  */
 
 #include <ctype.h>
-#include <err.h>
 #include <errno.h>
 #include <locale.h>
 #include <stdint.h>
