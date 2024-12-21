@@ -133,7 +133,7 @@ static enum esc_st find_escape_sequences(wint_t c, enum esc_st st)
         }
 
     } else if (st == ST_ESC_BEGIN) {
-        if (c == '[') {
+        if (c == '[' || c == '(') {
             return ST_ESC_CSI;
         } else if (c == 'P' || c == ']' || c == 'X' || c == '^' || c == '_') {
             return ST_ESC_STRING;
