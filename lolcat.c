@@ -13,7 +13,7 @@
  * 0. You just DO WHAT THE FUCK YOU WANT TO.
  */
 
-#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
 
 #include <ctype.h>
 #include <errno.h>
