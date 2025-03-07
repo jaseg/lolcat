@@ -239,7 +239,7 @@ int main(int argc, char** argv)
             force_locale = 0;
         } else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--random")) {
             random = 1;
-        } else if (!strcmp(argv[i], "-S") || !strcmp(argv[i], "--seed")) {
+        } else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--seed")) {
             random = 1;
             if ((++i) < argc) {
                 seed = strtoul(argv[i], &endptr, 10);
