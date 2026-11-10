@@ -92,7 +92,8 @@ int wcwidth(wchar_t wc) {
 int xterm256lookup(union rgb_c *in) {
     size_t min_i;
     int min_v = INT_MAX;
-    for (size_t i=0; i<ARRAY_SIZE(xterm256lut); i++) {
+    size_t i = 0;
+    for (i=0; i<ARRAY_SIZE(xterm256lut); i++) {
         int dr = in->r - xterm256lut[i].r;
         int dg = in->g - xterm256lut[i].g;
         int db = in->b - xterm256lut[i].b;
@@ -320,7 +321,8 @@ int main(int argc, char** argv)
             double correction_factor =(2*ARRAY_SIZE(codes_gradient)) / (double)ARRAY_SIZE(codes);
             freq_h *= correction_factor;
             freq_v *= correction_factor;
-            for (size_t i=0; i<ARRAY_SIZE(codes_gradient); i++) {
+            size_t i = 0;
+            for (i=0; i<ARRAY_SIZE(codes_gradient); i++) {
                 double f = i / (double)(ARRAY_SIZE(codes_gradient) - 1);
                 union rgb_c rgb_intermediate;
                 rgb_interpolate(&rgb_start, &rgb_end, &rgb_intermediate, f);
@@ -360,7 +362,8 @@ int main(int argc, char** argv)
     }
 
     i = 0;
-    for (char** filename = inputs; filename < inputs_end; filename++) {
+    char** filename = inputs;
+    for (filename = inputs; filename < inputs_end; filename++) {
         wint_t (*this_file_read_wchar)(FILE*); /* Used for --help because fmemopen is universally broken when used with fgetwc */
         FILE* f;
         int escape_state = ST_NONE;
