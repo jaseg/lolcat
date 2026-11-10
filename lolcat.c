@@ -77,6 +77,16 @@ union rgb_c {
     unsigned int i;
 };
 
+#ifdef _WIN32
+/* CP1251: Объявляем функцию Маркуса Куна, которая лежит в соседнем файле */
+int mk_wcwidth(wchar_t ucs);
+
+/* CP1251: Создаём обёртку со стандартным именем */
+int wcwidth(wchar_t wc) {
+    return mk_wcwidth(wc);
+}
+#endif
+
 #include "xterm256lut.h"
 
 int xterm256lookup(union rgb_c *in) {
